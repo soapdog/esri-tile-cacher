@@ -16,6 +16,9 @@ box.cfg {
 local fiber = require "fiber"
 
 -- setup database
+--
+-- Two spaces are created, the hot one which resides on RAM and the cold one
+-- is stored on disk.
 box.once('init', function()
   print("Creating tiles spaces and indexes...")
 
@@ -48,12 +51,14 @@ box.once('init', function()
   )
 end)
 
+-- Saves a tile in the hot storage. Used after fetching it from ArcGIS.
 function save_tile(url, tile)
   local t = box.tuple.new({url, tile, os.time(), os.time()})
   box.space.tiles_hot:replace(t)
   print("Saved hot tile for " .. url)
 end
 
+-- Fetch a tile from ArcGIS
 function get_tile_from_esri(url)
   print("Requesting tile from server...")
   local curl = require "curl"
@@ -66,6 +71,10 @@ function get_tile_from_esri(url)
   return true, r.body
 end
 
+-- This is a very important function.
+--
+-- It fetches the tile from hot, or if present in cold store, moves it
+-- to hot. In both cases the tile is cached and thus returned.
 function is_tile_cached(url)
 
   -- check in the hot tiles
@@ -90,6 +99,7 @@ function is_tile_cached(url)
   return false
 end
 
+-- fetches a tile from storage or ArcGIS. If from ArcGIS then cache.
 function get_tile(url)
   local t = is_tile_cached(url)
 
@@ -108,14 +118,19 @@ function get_tile(url)
   return false
 end
 
+-- Find what tiles should be moved to cold storage
 function collect_cold_tiles()
-  local timestamp = os.time() - (60 * 2)
+  local timestamp = os.time() - (60 * 2) -- this is the two minutes treshold.
   local tiles = box.space.tiles_hot.index.last_access:select({timestamp}, {
     iterator = "LT"
   })
   return tiles
 end
 
+-- this is the fiber, a cooperative lightweight thread.
+--
+-- It collects tiles and move them to cold storage. It has a tentative
+-- heartbeat of 10 seconds.
 function tiles_collector_fiber()
   fiber.name("tiles collector")
   while true do
@@ -140,7 +155,7 @@ function report()
   print("COLD - Records: " .. tostring(box.space.tiles_cold:count()) .. " in " .. tostring(box.space.tiles_cold:bsize()) .. " bytes")
 end
 
-
+-- This is the HTTP Request handler, it talks back to whoever called our nanoservice toy
 function handler(self)
   local url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/"
   url = url .. self:stash("num1") .. "/"
@@ -169,4 +184,5 @@ start_server()
 
 local collector = fiber.create(tiles_collector_fiber)
 
+-- this is handy for debugging.
 require('console').start()
