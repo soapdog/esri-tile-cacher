@@ -29,3 +29,5 @@ Call it with _curl_ like:
 ```$ curl -v "http://localhost:8080/ArcGIS/cache/World_Street_Map/5/17/19"```
 
 If that tile is not cached, then it will request from ArcGIS and cache.
+
+![Screen from the app](screen.png)
