@@ -157,7 +157,9 @@ end
 
 -- This is the HTTP Request handler, it talks back to whoever called our nanoservice toy
 function handler(self)
-  local url = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/"
+  local url = "https://server.arcgisonline.com/ArcGIS/rest/services/"
+  url = url .. self:stash("basemap")
+  url = url .. self:stash("/MapServer/tile/")
   url = url .. self:stash("num1") .. "/"
   url = url .. self:stash("num2") .. "/"
   url = url .. self:stash("num3")
@@ -175,7 +177,7 @@ end
 function start_server()
   local httpd = require('http.server').new("0.0.0.0", "8080")
 
-  httpd:route({path = "/ArcGIS/cache/World_Street_Map/:num1/:num2/:num3"}, handler)
+  httpd:route({path = "/ArcGIS/cache/:basemap/tile/:num1/:num2/:num3"}, handler)
 
   httpd:start()
 end
