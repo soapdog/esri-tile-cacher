@@ -175,7 +175,7 @@ end
 function start_server()
   local httpd = require('http.server').new("0.0.0.0", "8080")
 
-  httpd:route({path = "/ArcGIS/cache/World_Street_Map/:num1/:num2/:num3"}, handler)
+  httpd:route({path = "/ArcGIS/cache/World_Street_Map/tile/:num1/:num2/:num3"}, handler)
 
   httpd:start()
 end
